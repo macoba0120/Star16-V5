@@ -27,7 +27,7 @@ To use the CPU simulator and assembler, you can run the Python scripts in the `s
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue for any suggestions or improvements.
 
-I need someone to refactor my Python code into C++ for da speeds. Thank you in advance.
+I need someone to refactor my Python code into C++ for da speedz. Thank you in advance.
 
 ## License
 
