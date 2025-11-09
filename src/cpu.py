@@ -669,3 +669,64 @@ class BIOSCPU(cpu):
         if next_tail != head:  # Buffer not full
             self.write_bda_byte(self.KEYBOARD_BUFFER + tail, key & 0xFF)
             self.write_bda_byte(self.KEYBOARD_BUFFER_TAIL, next_tail)
+
+    def bios_console_services(self):
+        """INT 0x03 - Console I/O Services"""
+        function = self.regs[0]
+    
+        match function:
+            case 0x00:  # Print Character
+                char = self.regs[1] & 0xFF
+                self.write_io(0x9000, char)
+            case 0x01:  # Print String
+                # B = address of null-terminated string
+                addr = self.regs[1]
+                while True:
+                    char = self.mem[addr] & 0xFF
+                    if char == 0:
+                        break
+                    self.write_io(0x9000, char)
+                    addr += 1
+            case 0x02:  # Read Character
+                # Wait for keypress
+                while self.read_io(0x9004) == 0:
+                    pass  # Busy wait
+                self.regs[0] = self.read_io(0x9005)
+            case 0x03:  # Check Key
+                if self.read_io(0x9004):
+                    self.regs[0] = 0xFFFF
+                else:
+                    self.regs[0] = 0x0000
+
+    def bios_disk_services(self):
+        """INT 0x04 - Disk Services"""
+        function = self.regs[0]
+    
+        match function:
+            case 0x00:  # Read Sector
+                sector = self.regs[1]
+                buffer_addr = self.regs[2]
+                # Simulate disk read
+                for i in range(512):  # Standard sector size
+                    self.mem[buffer_addr + i] = self.disk_data[sector * 512 + i]
+            case 0x01:  # Write Sector
+                sector = self.regs[1]
+                buffer_addr = self.regs[2]
+                # Simulate disk write
+                for i in range(512):
+                    self.disk_data[sector * 512 + i] = self.mem[buffer_addr + i]
+
+    def bios_system_services(self):
+        """INT 0x05 - System Services"""
+        function = self.regs[0]
+    
+        match function:
+            case 0x00:  # Reset System
+                self.write_io(0x900B, 0x0001)
+            case 0x01:  # Shutdown
+                self.write_io(0x900B, 0x0002)
+            case 0x02:  # Get Timer
+                self.regs[0] = self.read_io(0x9002)
+            case 0x03:  # Play Sound
+                frequency = self.regs[1]
+                self.write_io(0x9006, frequency)

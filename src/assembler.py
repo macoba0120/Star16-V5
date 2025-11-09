@@ -224,3 +224,25 @@ class Assembler:
                 raise ValueError(f"Address too large: {address:#x}")
         
         return mode, mem_field
+    
+    # Add to assembler to handle data directives
+    def assemble_data(self, line):
+        """Assemble data directives"""
+        if line.startswith('.DATA '):
+            data_str = line[6:].strip('"')
+            values = []
+            for char in data_str:
+                values.append(ord(char))
+            values.append(0)  # Null terminator
+            return values
+        elif line.startswith('.BYTE '):
+            return [int(x.strip()) for x in line[6:].split(',')]
+        elif line.startswith('.WORD '):
+            words = [int(x.strip()) for x in line[6:].split(',')]
+            # Split words into bytes (little-endian)
+            bytes = []
+            for word in words:
+                bytes.append(word & 0xFF)
+                bytes.append((word >> 8) & 0xFF)
+            return bytes
+        return None
