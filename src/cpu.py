@@ -50,8 +50,7 @@ class cpu:
                     self.exec_rcm(opcode, reg, condition, address)
         except ValueError as verr:
             print("ERR: Error when parsing instruction: ", verr)
-            self.run = False
-            print("CPU halted.")
+            input("Press a key to continue... ")
         except ZeroDivisionError as zde:
             print("ERR: Division by 0 occured.")
             input("Press a key to continue... ")
