@@ -12,7 +12,7 @@ StarCPU V5 is a CPU simulation project that provides a framework for executing i
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/StarCPU-V5.git
+   git clone https://github.com/macoba0120/StarCPU-V5.git
    ```
 2. Navigate to the project directory:
    ```
