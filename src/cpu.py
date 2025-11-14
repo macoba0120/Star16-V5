@@ -720,8 +720,7 @@ class BIOSCPU(cpu):
         screen_height = self.read_bda_byte(self.SCREEN_HEIGHT)
         video_base = self.read_bda_word(self.VIDEO_MEMORY_BASE)
     
-        if char == 10:  # Newline
-            cursor_x = 0
+        if char == 10:  # Line feed
             cursor_y += 1
         elif char == 13:  # Carriage return
             cursor_x = 0
