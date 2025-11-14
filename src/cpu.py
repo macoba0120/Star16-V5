@@ -1,3 +1,5 @@
+import pygame
+
 class cpu:
     def __init__(self):
         self.regs = [0] * 16
@@ -795,10 +797,3 @@ class BIOSCPU(cpu):
         if next_tail != head:  # Buffer not full
             self.write_bda_byte(self.KEYBOARD_BUFFER + tail, key & 0xFF)
             self.write_bda_byte(self.KEYBOARD_BUFFER_TAIL, next_tail)
-
-import pygame
-
-def start:
-    pygame.init()
-    cpu = BIOSCPU()
-    
