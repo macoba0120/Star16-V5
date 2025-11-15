@@ -344,8 +344,6 @@ class cpu:
     
                 # Call the appropriate BIOS service
                 match imm:
-                    case 0x00:  # System Services
-                        self.bios_system_services()
                     case 0x01:  # Video Services
                         self.bios_video_services()
                     case 0x02:  # Keyboard Services  
@@ -354,8 +352,8 @@ class cpu:
                         self.bios_console_services()
                     case 0x04:  # Disk Services
                         self.bios_disk_services()
-                    case 0x05:  # System Info
-                        self.bios_system_info()
+                    case 0x05:  # System Services
+                        self.bios_system_services()
                     case _:
                         print(f"Unknown BIOS service: {imm:#x}")
     
