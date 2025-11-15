@@ -12,7 +12,7 @@ StarCPU V5 is a CPU simulation project that provides a framework for executing i
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/StarCPU-V5.git
+   git clone https://github.com/macoba0120/StarCPU-V5.git
    ```
 2. Navigate to the project directory:
    ```
@@ -27,7 +27,7 @@ To use the CPU simulator and assembler, you can run the Python scripts in the `s
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue for any suggestions or improvements.
 
-I need someone to refactor my Python code into C++ for da speeds. Thank you in advance.
+I need someone to refactor my Python code into C++ for da speedz. Thank you in advance.
 
 ## License
 

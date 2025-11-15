@@ -1,3 +1,5 @@
+import pygame
+
 class cpu:
     def __init__(self):
         self.regs = [0] * 16
@@ -50,8 +52,7 @@ class cpu:
                     self.exec_rcm(opcode, reg, condition, address)
         except ValueError as verr:
             print("ERR: Error when parsing instruction: ", verr)
-            self.run = False
-            print("CPU halted.")
+            input("Press a key to continue... ")
         except ZeroDivisionError as zde:
             print("ERR: Division by 0 occured.")
             input("Press a key to continue... ")
@@ -493,20 +494,147 @@ class BIOSCPU(cpu):
         super().__init__()
         # BIOS Data Area addresses
         self.BDA_BASE = 0xE000
-        self.CURSOR_X = self.BDA_BASE + 0x00    # 1 byte
-        self.CURSOR_Y = self.BDA_BASE + 0x01    # 1 byte  
-        self.VIDEO_MODE = self.BDA_BASE + 0x02  # 1 byte
-        self.SCREEN_WIDTH = self.BDA_BASE + 0x03 # 1 byte
-        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04 # 1 byte
-        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10 # 32 bytes
-        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30 # 1 byte
-        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31 # 1 byte
-        self.SYSTEM_TIME = self.BDA_BASE + 0x40 # 4 bytes (ticks)
-        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50 # 2 bytes
-        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60 # 2 bytes
+        self.CURSOR_X = self.BDA_BASE + 0x00
+        self.CURSOR_Y = self.BDA_BASE + 0x01  
+        self.VIDEO_MODE = self.BDA_BASE + 0x02
+        self.SCREEN_WIDTH = self.BDA_BASE + 0x03
+        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04
+        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10
+        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30
+        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31
+        self.SYSTEM_TIME = self.BDA_BASE + 0x40
+        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50
+        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60
+        
+        # Pygame display variables
+        self.screen = None
+        self.clock = None
+        self.font = None
+        self.last_key_event = None
         
         self.initialize_bios_data()
+
+    def initialize_pygame(self):
+        """Initialize Pygame display"""
+        pygame.init()
+        self.screen = pygame.display.set_mode((640, 400))
+        pygame.display.set_caption("CPU Emulator")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 24)  # Default font
+        
+    def update_display(self):
+        """Update Pygame display based on CPU video memory"""
+        if not self.screen:
+            return
+            
+        # Handle Pygame events
+        self.handle_pygame_events()
+        
+        # Get video mode and memory info from BDA
+        video_mode = self.read_bda_byte(self.VIDEO_MODE)
+        screen_width = self.read_bda_byte(self.SCREEN_WIDTH)
+        screen_height = self.read_bda_byte(self.SCREEN_HEIGHT)
+        video_base = self.read_bda_word(self.VIDEO_MEMORY_BASE)
+        
+        # Clear screen
+        self.screen.fill((0, 0, 0))
+        
+        # Render text mode (mode 0x03 - 80x25 text)
+        if video_mode == 0x03:
+            self.render_text_mode(video_base, screen_width, screen_height)
+        
+        # Update display
+        pygame.display.flip()
+        self.clock.tick(60)  # 60 FPS
+        
+    def render_text_mode(self, video_base, width, height):
+        """Render text mode display"""
+        char_width = 8
+        char_height = 16
+        
+        for y in range(height):
+            for x in range(width):
+                # Calculate position in video memory
+                mem_pos = video_base + (y * width + x)
+                if mem_pos >= len(self.mem):
+                    continue
+                    
+                char_code = self.mem[mem_pos]
+                if char_code == 0:
+                    continue
+                    
+                # Convert character code to actual character
+                if 32 <= char_code <= 126:  # Printable ASCII
+                    char = chr(char_code)
+                else:
+                    char = '?'  # Non-printable character
+                
+                # Render character
+                text_surface = self.font.render(char, True, (255, 255, 255))
+                self.screen.blit(text_surface, (x * char_width, y * char_height))
+        
+        # Draw cursor
+        cursor_x = self.read_bda_byte(self.CURSOR_X)
+        cursor_y = self.read_bda_byte(self.CURSOR_Y)
+        pygame.draw.rect(self.screen, (255, 255, 255), 
+                        (cursor_x * char_width, cursor_y * char_height, 
+                         char_width, 2))
+                         
+    def handle_pygame_events(self):
+        """Handle Pygame events and convert to CPU keyboard input"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.run = False
+                pygame.quit()
+                sys.exit()
+                
+            elif event.type == pygame.KEYDOWN:
+                # Handle special keys
+                if event.key == pygame.K_RETURN:
+                    self.add_key_to_buffer(13)  # Carriage return
+                    self.add_key_to_buffer(10)  # Line feed
+                elif event.key == pygame.K_BACKSPACE:
+                    self.add_key_to_buffer(8)   # Backspace
+                elif event.key == pygame.K_ESCAPE:
+                    self.add_key_to_buffer(27)  # Escape
+                elif event.key == pygame.K_TAB:
+                    self.add_key_to_buffer(9)   # Tab
+                elif event.key == pygame.K_UP:
+                    self.add_key_to_buffer(0x48)  # Up arrow
+                elif event.key == pygame.K_DOWN:
+                    self.add_key_to_buffer(0x50)  # Down arrow
+                elif event.key == pygame.K_LEFT:
+                    self.add_key_to_buffer(0x4B)  # Left arrow
+                elif event.key == pygame.K_RIGHT:
+                    self.add_key_to_buffer(0x4D)  # Right arrow
+                else:
+                    # Regular character
+                    if event.unicode and ord(event.unicode) >= 32:
+                        self.add_key_to_buffer(ord(event.unicode))
     
+    def step_with_display(self):
+        """Execute one instruction and update display"""
+        if not self.run:
+            return
+            
+        # Initialize Pygame if not already done
+        if not self.screen:
+            self.initialize_pygame()
+            
+        # Execute instruction
+        self.step()
+        
+        # Update display
+        self.update_display()
+    
+    def run_with_display(self):
+        """Run CPU continuously with Pygame display"""
+        self.initialize_pygame()
+        
+        while self.run:
+            self.step_with_display()
+            
+        pygame.quit()
     def initialize_bios_data(self):
         """Initialize BIOS Data Area with default values"""
         # Cursor and video
@@ -592,8 +720,7 @@ class BIOSCPU(cpu):
         screen_height = self.read_bda_byte(self.SCREEN_HEIGHT)
         video_base = self.read_bda_word(self.VIDEO_MEMORY_BASE)
     
-        if char == 10:  # Newline
-            cursor_x = 0
+        if char == 10:  # Line feed
             cursor_y += 1
         elif char == 13:  # Carriage return
             cursor_x = 0
