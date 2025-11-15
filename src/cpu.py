@@ -19,6 +19,28 @@ class cpu:
         self.reg_names = ["A", "B", "C", "D", "X", "Y", "Z", "SP", 
                          "MP1", "MP2", "MP3", "MP4", "E", "F", "G", "H"]
 
+        # BIOS Data Area addresses
+        self.BDA_BASE = 0xE000
+        self.CURSOR_X = self.BDA_BASE + 0x00                # 1 word
+        self.CURSOR_Y = self.BDA_BASE + 0x01                # 1 word
+        self.VIDEO_MODE = self.BDA_BASE + 0x02              # 1 word
+        self.SCREEN_WIDTH = self.BDA_BASE + 0x03            # 1 word
+        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04           # 1 word
+        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10         # 32 bytes
+        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30    # 1 byte
+        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31    # 1 byte
+        self.SYSTEM_TIME = self.BDA_BASE + 0x40             # 4 bytes
+        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50       # 1 word
+        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60        # 1 word (in KB)
+        
+        # Pygame display variables
+        self.screen = None
+        self.clock = None
+        self.font = None
+        self.last_key_event = None
+        
+        self.initialize_bios_data()
+
     def execute(self, instruction):
         format = (instruction >> 30) & 0b11
         opcode = (instruction >> 24) & 0b111111
@@ -314,13 +336,35 @@ class cpu:
                 pass
 
             case 0x30:  # INT - Software Interrupt
-                # imm is the interrupt number (0-255), not the address!
-                interrupt_vector = 0xFF00 + (imm * 1)  # Each vector is 2 bytes
+                # Save state
                 self.push(self.pc)        # Save return address
-                self.push(self.regs[0])   # Save A register (or save all registers)
-                self.ie = False           # Disable interrupts
-                # Read the interrupt handler address from the vector table
-                self.pc = self.mem[interrupt_vector]
+                self.push(self.regs[0])   # Save A
+                self.push(self.regs[1])   # Save B  
+                self.push(self.regs[2])   # Save C
+    
+                # Call the appropriate BIOS service
+                match imm:
+                    case 0x00:  # System Services
+                        self.bios_system_services()
+                    case 0x01:  # Video Services
+                        self.bios_video_services()
+                    case 0x02:  # Keyboard Services  
+                        self.bios_keyboard_services()
+                    case 0x03:  # Console I/O Services
+                        self.bios_console_services()
+                    case 0x04:  # Disk Services
+                        self.bios_disk_services()
+                    case 0x05:  # System Info
+                        self.bios_system_info()
+                    case _:
+                        print(f"Unknown BIOS service: {imm:#x}")
+    
+                # Restore state and return
+                self.regs[2] = self.pop()  # Restore C
+                self.regs[1] = self.pop()  # Restore B
+                self.regs[0] = self.pop()  # Restore A
+                self.pc = self.pop()       # Restore PC
+                # Note: interrupts remain enabled during BIOS calls
 
             case 0x31:  # RTI
                 self.regs[0] = self.pop()   # Restore A register (or restore all registers)
@@ -490,31 +534,6 @@ class cpu:
         eq = (condition & 0b010) and self.zf 
         gt = (condition & 0b001) and ((not self.sf) and (not self.zf))
         return lt or eq or gt
-
-class BIOSCPU(cpu):
-    def __init__(self):
-        super().__init__()
-        # BIOS Data Area addresses
-        self.BDA_BASE = 0xE000
-        self.CURSOR_X = self.BDA_BASE + 0x00                # 1 word
-        self.CURSOR_Y = self.BDA_BASE + 0x01                # 1 word
-        self.VIDEO_MODE = self.BDA_BASE + 0x02              # 1 word
-        self.SCREEN_WIDTH = self.BDA_BASE + 0x03            # 1 word
-        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04           # 1 word
-        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10         # 32 bytes
-        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30    # 1 byte
-        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31    # 1 byte
-        self.SYSTEM_TIME = self.BDA_BASE + 0x40             # 4 bytes
-        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50       # 1 word
-        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60        # 1 word (in KB)
-        
-        # Pygame display variables
-        self.screen = None
-        self.clock = None
-        self.font = None
-        self.last_key_event = None
-        
-        self.initialize_bios_data()
 
     def initialize_pygame(self):
         """Initialize Pygame display"""
