@@ -1,4 +1,5 @@
 import pygame
+import sys
 
 class cpu:
     def __init__(self):
@@ -322,7 +323,8 @@ class cpu:
                 self.pc = self.mem[interrupt_vector]
 
             case 0x31:  # RTI
-                self.pc = self.pop()
+                self.regs[0] = self.pop()   # Restore A register (or restore all registers)
+                self.pc = self.pop()        # Return to normal execution
 
             case 0x32:  # STI
                 self.ie = True
@@ -494,17 +496,17 @@ class BIOSCPU(cpu):
         super().__init__()
         # BIOS Data Area addresses
         self.BDA_BASE = 0xE000
-        self.CURSOR_X = self.BDA_BASE + 0x00
-        self.CURSOR_Y = self.BDA_BASE + 0x01  
-        self.VIDEO_MODE = self.BDA_BASE + 0x02
-        self.SCREEN_WIDTH = self.BDA_BASE + 0x03
-        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04
-        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10
-        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30
-        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31
-        self.SYSTEM_TIME = self.BDA_BASE + 0x40
-        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50
-        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60
+        self.CURSOR_X = self.BDA_BASE + 0x00                # 1 word
+        self.CURSOR_Y = self.BDA_BASE + 0x01                # 1 word
+        self.VIDEO_MODE = self.BDA_BASE + 0x02              # 1 word
+        self.SCREEN_WIDTH = self.BDA_BASE + 0x03            # 1 word
+        self.SCREEN_HEIGHT = self.BDA_BASE + 0x04           # 1 word
+        self.KEYBOARD_BUFFER = self.BDA_BASE + 0x10         # 32 bytes
+        self.KEYBOARD_BUFFER_HEAD = self.BDA_BASE + 0x30    # 1 byte
+        self.KEYBOARD_BUFFER_TAIL = self.BDA_BASE + 0x31    # 1 byte
+        self.SYSTEM_TIME = self.BDA_BASE + 0x40             # 4 bytes
+        self.VIDEO_MEMORY_BASE = self.BDA_BASE + 0x50       # 1 word
+        self.INSTALLED_MEMORY = self.BDA_BASE + 0x60        # 1 word (in KB)
         
         # Pygame display variables
         self.screen = None

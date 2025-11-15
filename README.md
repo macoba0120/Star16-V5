@@ -6,7 +6,7 @@ StarCPU V5 is a CPU simulation project that provides a framework for executing i
 
 - **CPU Simulation**: The `cpu.py` file defines a `cpu` class that simulates a CPU with registers, memory, and instruction execution capabilities.
 - **Assembler**: The `assembler.py` file provides an `Assembler` class that converts assembly language into machine code, supporting various instruction formats.
-- **BIOS Support**: The `cpu` class includes a subclass `BIOSCPU` for handling BIOS-related functionalities.
+- **BIOS Support**: The `cpu` class includes a subclass `BIOSCPU` for handling BIOS-related functionalities and a Pygame interface.
 
 ## Installation
 
